@@ -1,0 +1,39 @@
+name: Deploy Flask to EC2
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Add SSH key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: Trust EC2 host
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy and restart
+        env:
+          HOST: ${{ secrets.EC2_HOST }}
+          USER: ${{ secrets.EC2_USER }}
+        run: |
+          ssh $USER@$HOST << 'EOF'
+            set -e
+
+            cd /home/ec2-user/app/INF2006-CloudComputing
+
+            git fetch --all
+            git reset --hard origin/main
+
+            source venv/bin/activate
+            pip install -r requirements.txt
+
+            sudo systemctl restart flaskapp
+          EOF
