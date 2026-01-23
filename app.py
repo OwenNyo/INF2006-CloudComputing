@@ -2,7 +2,6 @@ from flask import Flask, render_template
 import os
 import pandas as pd
 from dotenv import load_dotenv
-from functools import lru_cache
 
 app = Flask(__name__)
 
@@ -45,10 +44,6 @@ def load_dataset():
         f"Unknown DATA_SOURCE value: {source}"
     )
 
-@lru_cache(maxsize=1)
-def get_dataset():
-    return load_dataset()
-
 @app.route("/")
 def home():
     return render_template("index.html")
@@ -75,7 +70,7 @@ def function5():
 
 @app.route("/api/preview")
 def preview():
-    df = get_dataset()
+    df = load_dataset()
     return df.head(10).to_json(orient="records")
 
 if __name__ == "__main__":
