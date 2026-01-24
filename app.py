@@ -148,7 +148,10 @@ def university_roi():
 
 @app.route("/")
 def home():
-    return render_template("index.html")
+    return render_template(
+        "index.html",
+        brand_sub="Home Page",
+    )
 
 
 @app.route("/function1")
@@ -194,19 +197,25 @@ def function1():
 
     return render_template(
         "function1.html",
+        brand_sub="Employment Stability Index",
+        active_page="function1",
         bar_labels=bar_labels,
         bar_values=bar_values,
         scatter_points=scatter_points,
         years=years,
         line_datasets=line_datasets,
         top3=top3,
-        bottom3=bottom3
+        bottom3=bottom3,
     )
 
 
 @app.route("/function2")
 def function2():
-    return render_template("function2.html")
+    return render_template(
+        "function2.html",
+        brand_sub="Function 2 Dashboard",
+        active_page="function2",
+    )
 
 
 @app.route("/function3")
@@ -239,6 +248,8 @@ def function3():
 
     return render_template(
         "function3.html",
+        brand_sub="University ROI Proxy",
+        active_page="function3",
         years=years,
         initial_results=initial_results,
         top3=top3,
@@ -248,12 +259,20 @@ def function3():
 
 @app.route("/function4")
 def function4():
-    return render_template("function4.html")
+    return render_template(
+        "function4.html",
+        brand_sub="Function 4 Dashboard",
+        active_page="function4",
+    )
 
 
 @app.route("/function5")
 def function5():
-    return render_template("function5.html")
+    return render_template(
+        "function5.html",
+        brand_sub="Function 5 Dashboard",
+        active_page="function5",
+    )
 
 
 @app.route("/api/preview")

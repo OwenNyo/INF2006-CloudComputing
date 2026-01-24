@@ -1,0 +1,27 @@
+<!-- Top Navbar -->
+<nav class="nav">
+    <div class="nav-inner">
+        <a class="brand" href="/">
+            <span class="logo" aria-hidden="true">
+                <svg viewBox="0 0 64 64" fill="none">
+                    <path d="M32 6L54 18V46L32 58L10 46V18L32 6Z" class="logo-a" />
+                    <path d="M32 14L46 22V40L32 48L18 40V22L32 14Z" class="logo-b" />
+                    <path d="M18 22L32 30L46 22" class="logo-c" />
+                </svg>
+            </span>
+
+            <span class="brand-text">
+                <span class="brand-name">INF2006</span>
+                <span class="brand-sub">{{ brand_sub }}</span>
+            </span>
+        </a>
+
+        <div class="nav-right">
+            <a class="nav-link {% if active_page == 'function1' %}active{% endif %}" href="/function1">Employment Stability</a>
+            <a class="nav-link {% if active_page == 'function2' %}active{% endif %}" href="/function2">Function 2</a>
+            <a class="nav-link {% if active_page == 'function3' %}active{% endif %}" href="/function3">University ROI Proxy</a>
+            <a class="nav-link {% if active_page == 'function4' %}active{% endif %}" href="/function4">Function 4</a>
+            <a class="nav-link {% if active_page == 'function5' %}active{% endif %}" href="/function5">Function 5</a>
+        </div>
+    </div>
+</nav>
