@@ -5,10 +5,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Function 3</title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/function3.css') }}">
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 
 <body>
@@ -39,44 +40,103 @@
     </nav>
 
     <main class="page">
-        <!-- Intentionally blank (content will be added later) -->
-        <h1>University ROI Proxy Analysis</h1>
+        <!-- HERO / TITLE CARD -->
+        <section class="hero">
+            <div class="hero-inner">
+                <div class="pill">University ROI Proxy (Salary × Employability)</div>
+                <h1>Which university has the strongest combined outcome?</h1>
+                <div class="subtitle">
+                    <p>
+                        <strong>ROI Proxy</strong> = <strong>FT Permanent Employment Rate (%)</strong> ×
+                        <strong>Gross Monthly Median Salary (S$)</strong>.
+                        Higher values indicate a better combined employability + pay outcome.
+                    </p>
 
-        <p>
-            ROI Proxy = <strong>Full-Time Employment Rate × Gross Monthly Median Salary</strong><br>
-            This metric combines employability and compensation into a single outcome indicator.
-        </p>
+                    <div class="summary">
+                        <div class="summary-group">
+                            <span class="label positive">Top 3 ROI</span>
+                            <span class="values">{{ top3 | join(", ") }}</span>
+                        </div>
+                        <div class="summary-group">
+                            <span class="label negative">Bottom 3 ROI</span>
+                            <span class="values">{{ bottom3 | join(", ") }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
+        <!-- YEAR CONTROLS (dropdowns like Function 1) -->
         <div class="controls">
-            <label>Start Year:</label>
-            <input type="number" id="startYear" placeholder="e.g. 2019">
+            <div class="control">
+                <label for="yearFrom">From</label>
+                <select id="yearFrom"></select>
+            </div>
 
-            <label>End Year:</label>
-            <input type="number" id="endYear" placeholder="e.g. 2023">
+            <div class="control">
+                <label for="yearTo">To</label>
+                <select id="yearTo"></select>
+            </div>
 
-            <button onclick="loadROI()">Run Analysis</button>
+            <button class="btn" id="applyYears">Apply</button>
+            <button class="btn btn-ghost" id="resetYears">Reset</button>
         </div>
 
-        <canvas id="roiChart"></canvas>
+        <!-- CARDS -->
+        <section class="section">
+            <div class="chart-grid">
 
-        <table id="roiTable">
-            <thead>
-                <tr>
-                    <th>University</th>
-                    <th>Avg FT Employment Rate (%)</th>
-                    <th>Avg Median Salary (S$)</th>
-                    <th>ROI Score</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+                <div class="chart-card">
+                    <div class="chart-head">
+                        <h3 class="chart-title">Chart: ROI Proxy Score by University</h3>
+                        <p class="chart-sub">Ranked composite index (FT employment × median salary).</p>
+                    </div>
+                    <div class="chart-wrap">
+                        <canvas id="roiChart"></canvas>
+                    </div>
+                </div>
 
-        <script src="{{ url_for('static', filename='js/function3.js') }}"></script>
+                <div class="chart-card">
+                    <div class="chart-head">
+                        <h3 class="chart-title">Table: ROI Breakdown</h3>
+                        <p class="chart-sub">Shows the average FT employment rate and median salary used in the score.
+                        </p>
+                    </div>
 
+                    <div class="table-wrap">
+                        <table id="roiTable">
+                            <thead>
+                                <tr>
+                                    <th>University</th>
+                                    <th>Avg FT Employment Rate (%)</th>
+                                    <th>Avg Median Salary (S$)</th>
+                                    <th>ROI Score</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </section>
     </main>
+
     <footer class="footer">
         <p>INF2006 · Cloud Computing & Analytics Dashboard</p>
     </footer>
+
+    <!-- Flask → JS bridge -->
+    <script>
+    window.FUNCTION3_DATA = {
+        yearsAll: {{ years | tojson | safe }},
+        initialResults: {{ initial_results | tojson | safe }}
+    };
+    </script>
+
+
+
+    <script src="{{ url_for('static', filename='js/function3.js') }}"></script>
 </body>
 
 </html>

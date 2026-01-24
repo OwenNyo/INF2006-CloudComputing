@@ -211,7 +211,39 @@ def function2():
 
 @app.route("/function3")
 def function3():
-    return render_template("function3.html")
+
+    df = load_dataset()
+
+    # years in dataset only (sorted)
+    years = (
+        pd.to_numeric(df["year"], errors="coerce")
+        .dropna()
+        .astype(int)
+        .unique()
+        .tolist()
+    )
+    years = sorted(years)
+
+    # Compute initial ROI for full range (so page loads with data immediately)
+    initial_df = compute_university_roi(
+        df=df,
+        start_year=years[0] if years else None,
+        end_year=years[-1] if years else None,
+    )
+
+    initial_results = initial_df.to_dict(orient="records")
+
+    # Optional: Top3/Bottom3 by ROI score (nice for hero summary)
+    top3 = [r["university"] for r in initial_results[:3]]
+    bottom3 = [r["university"] for r in initial_results[-3:]]
+
+    return render_template(
+        "function3.html",
+        years=years,
+        initial_results=initial_results,
+        top3=top3,
+        bottom3=bottom3,
+    )
 
 
 @app.route("/function4")

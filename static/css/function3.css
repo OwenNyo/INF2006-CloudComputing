@@ -1,33 +1,143 @@
-body {
-    font-family: Arial, sans-serif;
-    margin: 40px;
+/*  ================================
+    Function 3 – Page-only styles
+    ================================ */
+
+.chart-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
 }
 
-h1 {
+.chart-card {
+    border-radius: 18px;
+    padding: 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    box-shadow: 0 10px 22px rgba(17, 24, 39, 0.06);
+}
+
+.chart-head {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
     margin-bottom: 10px;
 }
 
+.chart-title {
+    margin: 0;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.chart-sub {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.95rem;
+    line-height: 1.4;
+}
+
+.chart-wrap {
+    position: relative;
+    height: 420px;
+}
+
+/* Controls (same pattern as Function 1) */
 .controls {
-    margin-bottom: 20px;
+    margin-top: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: end;
 }
 
-table {
-    border-collapse: collapse;
+.control {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.control label {
+    font-size: 0.85rem;
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.control select {
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--ink);
+    outline: none;
+    min-width: 140px;
+}
+
+/* Hero summary badges */
+.summary {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.summary-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.summary-group .label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 999px;
+    letter-spacing: 0.03em;
+}
+
+.label.positive {
+    background: rgba(16, 185, 129, 0.12);
+    color: #065f46;
+}
+
+.label.negative {
+    background: rgba(239, 68, 68, 0.12);
+    color: #7f1d1d;
+}
+
+.summary-group .values {
+    font-size: 0.9rem;
+    color: var(--ink);
+}
+
+/* Table */
+.table-wrap {
+    overflow-x: auto;
+}
+
+#roiTable {
     width: 100%;
-    margin-top: 30px;
+    border-collapse: collapse;
+    margin-top: 8px;
 }
 
-th,
-td {
-    border: 1px solid #ccc;
-    padding: 10px;
+#roiTable th,
+#roiTable td {
+    border-bottom: 1px solid rgba(124, 58, 237, .12);
+    padding: 10px 12px;
     text-align: center;
+    white-space: nowrap;
 }
 
-th {
-    background-color: #f2f2f2;
+#roiTable thead th {
+    text-align: center;
+    font-weight: 800;
+    color: #374151;
+    background: rgba(124, 58, 237, .06);
 }
 
-canvas {
-    margin-top: 30px;
+@media (max-width: 760px) {
+    .chart-wrap {
+        height: 360px;
+    }
 }
