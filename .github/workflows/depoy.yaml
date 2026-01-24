@@ -15,9 +15,23 @@ jobs:
           ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
 
       - name: Trust EC2 host
+        shell: bash
         run: |
+          set -x
           mkdir -p ~/.ssh
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          chmod 700 ~/.ssh
+
+          echo "EC2_HOST=${{ secrets.EC2_HOST }}"
+          echo "Trying ssh-keyscan..."
+
+          # Try a few times (GitHub runners can be flaky)
+          for i in 1 2 3; do
+            ssh-keyscan -T 10 -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts && break
+            echo "ssh-keyscan failed, retrying ($i/3)..."
+            sleep 2
+          done
+
+          chmod 644 ~/.ssh/known_hosts
 
       - name: Deploy and restart
         env:
