@@ -22,11 +22,16 @@ body{
   margin: 0;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
   color: var(--ink);
+
   background:
-    radial-gradient(900px 450px at 20% 0%, rgba(124,58,237,.14), transparent 60%),
-    radial-gradient(800px 450px at 90% 10%, rgba(196,181,253,.28), transparent 55%),
-    linear-gradient(180deg, var(--bg), #ffffff);
+    radial-gradient(1400px 700px at 12% -10%, rgba(124,58,237,.12), transparent 70%),
+    radial-gradient(1200px 650px at 92% 5%, rgba(196,181,253,.18), transparent 72%),
+    radial-gradient(900px 600px at 60% 110%, rgba(124,58,237,.06), transparent 70%),
+    linear-gradient(180deg, var(--bg) 0%, #ffffff 70%);
+
+  background-attachment: fixed;
 }
+
 
 /* ---------- Navbar ---------- */
 .nav{
@@ -159,9 +164,10 @@ body{
   margin-top: 10px;
   border-radius: 22px;
   padding: 34px 28px;
-  background:
-    linear-gradient(135deg, rgba(124,58,237,.14), rgba(255,255,255,.65)),
-    radial-gradient(900px 420px at 85% 20%, rgba(196,181,253,.38), transparent 60%);
+
+  background: rgba(255,255,255,.72);
+  backdrop-filter: blur(10px);
+
   border: 1px solid rgba(124,58,237,.14);
   box-shadow: var(--shadow);
 }

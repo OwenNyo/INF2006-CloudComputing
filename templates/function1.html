@@ -4,7 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Function 1</title>
+
+  <!-- Base styles -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <!-- Function 1 page-only styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/function1.css') }}">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 
 <body>
@@ -36,10 +43,114 @@
   </nav>
 
   <main class="page">
-    <!-- Intentionally blank (content will be added later) -->
+    <section class="hero">
+      <div class="hero-inner">
+        <div class="pill">Graduate Employability Stability Index</div>
+        <h1>Who’s more dependable over time?</h1>
+        <div class="subtitle">
+          <p>
+            <strong>Stability Index</strong> = Mean employment rate ÷ standard deviation
+            (yearly averages, grouped by university).
+            Higher values indicate outcomes that are both strong and consistent over time.
+          </p>
+
+          <div class="stability-summary">
+            <div class="stability-group">
+              <span class="label positive">Top 3 Stability</span>
+              <span class="values">
+                Results: {{ top3 | join(", ") }} 
+              </span>
+            </div>
+
+            <div class="stability-group">
+              <span class="label negative">Bottom 3 Stability</span>
+              <span class="values">
+                Results: {{ bottom3 | join(", ") }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="controls">
+      <div class="control">
+        <label for="yearFrom">From</label>
+        <select id="yearFrom"></select>
+      </div>
+
+      <div class="control">
+        <label for="yearTo">To</label>
+        <select id="yearTo"></select>
+      </div>
+
+      <button class="btn" id="applyYears">Apply</button>
+      <button class="btn btn-ghost" id="resetYears">Reset</button>
+    </div>
+
+    <section class="section">
+      <div class="chart-grid">
+
+        <div class="chart-card">
+          <div class="chart-head">
+            <h3 class="chart-title">Chart 1: Ranked Stability Index</h3>
+            <p class="chart-sub">Fast ranking of reliability (mean ÷ volatility).</p>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="stabilityBar"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-head">
+            <h3 class="chart-title">Chart 2: Mean vs Standard Deviation</h3>
+            <p class="chart-sub">Separates “high but unstable” from “high and steady”. Hover for labels.</p>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="meanStdScatter"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-head">
+            <h3 class="chart-title">Chart 3: Employment Rate Over Time (Top 3 + Bottom 3)</h3>
+            <p class="chart-sub">Shows the time pattern behind the stability score.</p>
+          </div>
+          <div class="chart-wrap">
+            <canvas id="trendLine"></canvas>
+          </div>
+        </div>
+
+      </div>
+    </section>
   </main>
+
   <footer class="footer">
     <p>INF2006 · Cloud Computing & Analytics Dashboard</p>
   </footer>
+
+  <!-- Flask → JS bridge (Jinja renders here; external JS reads window.FUNCTION1_DATA) -->
+  <script>
+  window.FUNCTION1_DATA = {
+    // original full range
+    yearsAll: {{ years | tojson | safe }},
+    lineDatasetsAll: {{ line_datasets | tojson | safe }},
+
+    // the two charts that depend on computed stats
+    // (we will recompute them client-side after filtering)
+    barLabelsAll: {{ bar_labels | tojson | safe }},
+    barValuesAll: {{ bar_values | tojson | safe }},
+    scatterPointsAll: {{ scatter_points | tojson | safe }},
+
+    // optional: keep your initial displayed (same as “All” at start)
+    years: {{ years | tojson | safe }},
+    lineDatasets: {{ line_datasets | tojson | safe }},
+    barLabels: {{ bar_labels | tojson | safe }},
+    barValues: {{ bar_values | tojson | safe }},
+    scatterPoints: {{ scatter_points | tojson | safe }}
+  };
+</script>
+  <!-- Function 1 JS -->
+  <script src="{{ url_for('static', filename='js/function1.js') }}"></script>
 </body>
 </html>
