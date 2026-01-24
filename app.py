@@ -1,6 +1,7 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify, request
 import os
 import pandas as pd
+import numpy as np
 from dotenv import load_dotenv
 import math
 
@@ -9,19 +10,15 @@ app = Flask(__name__)
 # Load .env if present (safe for both local and EC2)
 load_dotenv()
 
+
 def load_dataset():
     source = os.getenv("DATA_SOURCE", "local").lower()
 
     if source == "local":
-        path = os.getenv(
-            "LOCAL_DATA_PATH",
-            "data/GraduateEmployment.csv"
-        )
+        path = os.getenv("LOCAL_DATA_PATH", "data/GraduateEmployment.csv")
 
         if not os.path.exists(path):
-            raise FileNotFoundError(
-                f"Local dataset not found at {path}"
-            )
+            raise FileNotFoundError(f"Local dataset not found at {path}")
 
         return pd.read_csv(path)
 
@@ -29,21 +26,17 @@ def load_dataset():
         url = os.getenv("S3_PRESIGNED_URL")
 
         if not url:
-            raise RuntimeError(
-                "S3_PRESIGNED_URL is not set"
-            )
+            raise RuntimeError("S3_PRESIGNED_URL is not set")
 
         try:
             return pd.read_csv(url)
         except Exception as e:
             raise RuntimeError(
-                "Failed to load dataset from pre-signed URL. "
-                "It may have expired."
+                "Failed to load dataset from pre-signed URL. " "It may have expired."
             ) from e
 
-    raise RuntimeError(
-        f"Unknown DATA_SOURCE value: {source}"
-    )
+    raise RuntimeError(f"Unknown DATA_SOURCE value: {source}")
+
 
 def compute_employability_stability(df: pd.DataFrame, group_col: str = "university"):
     """
@@ -87,9 +80,76 @@ def compute_employability_stability(df: pd.DataFrame, group_col: str = "universi
     years = sorted(series_df["year"].unique().tolist())
     return stats_df, series_df, years
 
+
+def compute_university_roi(df: pd.DataFrame, year=None, start_year=None, end_year=None):
+    filtered = df.copy()
+
+    # Ensure numeric types (GES often stores as text)
+    filtered["employment_rate_ft_perm"] = pd.to_numeric(
+        filtered["employment_rate_ft_perm"], errors="coerce"
+    )
+    filtered["gross_monthly_median"] = pd.to_numeric(
+        filtered["gross_monthly_median"], errors="coerce"
+    )
+    filtered["year"] = pd.to_numeric(filtered["year"], errors="coerce")
+
+    # Drop rows missing required values
+    filtered = filtered.dropna(
+        subset=["year", "university", "employment_rate_ft_perm", "gross_monthly_median"]
+    )
+
+    # Optional filters
+    if year is not None:
+        filtered = filtered[filtered["year"] == year]
+
+    if start_year is not None and end_year is not None:
+        filtered = filtered[
+            (filtered["year"] >= start_year) & (filtered["year"] <= end_year)
+        ]
+
+    grouped = (
+        filtered.groupby("university")
+        .agg(
+            avg_ft_employment_rate=("employment_rate_ft_perm", "mean"),
+            avg_median_salary=("gross_monthly_median", "mean"),
+        )
+        .reset_index()
+    )
+
+    grouped["roi_score"] = (
+        grouped["avg_ft_employment_rate"] * grouped["avg_median_salary"]
+    )
+    grouped = grouped.sort_values(by="roi_score", ascending=False).round(2)
+
+    return grouped
+
+
+@app.route("/api/roi/university", methods=["GET"])
+def university_roi():
+    year = request.args.get("year", type=int)
+    start_year = request.args.get("start_year", type=int)
+    end_year = request.args.get("end_year", type=int)
+
+    df = load_dataset()
+
+    result_df = compute_university_roi(
+        df=df, year=year, start_year=start_year, end_year=end_year
+    )
+
+    return jsonify(
+        {
+            "metric": "University ROI Proxy",
+            "definition": "FT Employment Rate × Gross Monthly Median Salary",
+            "filters": {"year": year, "start_year": start_year, "end_year": end_year},
+            "results": result_df.to_dict(orient="records"),
+        }
+    )
+
+
 @app.route("/")
 def home():
     return render_template("index.html")
+
 
 @app.route("/function1")
 def function1():
@@ -143,26 +203,32 @@ def function1():
         bottom3=bottom3
     )
 
+
 @app.route("/function2")
 def function2():
     return render_template("function2.html")
+
 
 @app.route("/function3")
 def function3():
     return render_template("function3.html")
 
+
 @app.route("/function4")
 def function4():
     return render_template("function4.html")
+
 
 @app.route("/function5")
 def function5():
     return render_template("function5.html")
 
+
 @app.route("/api/preview")
 def preview():
     df = load_dataset()
     return df.head(10).to_json(orient="records")
+
 
 if __name__ == "__main__":
     app.run(debug=True)
