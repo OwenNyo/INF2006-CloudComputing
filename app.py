@@ -81,6 +81,97 @@ def compute_employability_stability(df: pd.DataFrame, group_col: str = "universi
     return stats_df, series_df, years
 
 
+def compute_salary_trend_analysis(df: pd.DataFrame, universities=None, start_year=None, end_year=None):
+    """
+    Computes salary trend analysis with moving averages and linear trend lines.
+    Allows filtering by universities and time period.
+    """
+    work = df.copy()
+    
+    work["gross_monthly_median"] = pd.to_numeric(work["gross_monthly_median"], errors="coerce")
+    work["year"] = pd.to_numeric(work["year"], errors="coerce")
+    
+    # Remove rows with missing required fields
+    work = work.dropna(subset=["year", "university", "gross_monthly_median"])
+    
+    # Convert year to int for proper filtering
+    work["year"] = work["year"].astype(int)
+    
+    # Filter by time period if specified
+    if start_year is not None:
+        work = work[work["year"] >= start_year]
+    if end_year is not None:
+        work = work[work["year"] <= end_year]
+    
+    # Filter by universities if specified
+    if universities:
+        work = work[work["university"].isin(universities)]
+    
+    # Get yearly median salary by university (averaging across degrees)
+    yearly_salary = (
+        work.groupby(["university", "year"], as_index=False)["gross_monthly_median"]
+        .mean()
+        .round(2)
+    )
+    
+    years = sorted(yearly_salary["year"].unique())
+    available_universities = sorted(yearly_salary["university"].unique())
+    
+    # Calculate trend data for each university
+    university_data = {}
+    
+    for university in available_universities:
+        univ_data = yearly_salary[yearly_salary["university"] == university].sort_values("year")
+        
+        if len(univ_data) < 2:
+            continue
+            
+        salaries = univ_data["gross_monthly_median"].tolist()
+        univ_years = univ_data["year"].tolist()
+        
+        # 3-year moving average
+        moving_avg = []
+        for i in range(len(salaries)):
+            if i >= 2:
+                avg_3yr = np.mean(salaries[i-2:i+1])
+                moving_avg.append(round(avg_3yr, 2))
+            elif i == 1:
+                avg_2yr = np.mean(salaries[i-1:i+1])
+                moving_avg.append(round(avg_2yr, 2))
+            else:
+                moving_avg.append(salaries[i])
+        
+        # Linear trend line
+        if len(salaries) >= 2:
+            trend_slope, trend_intercept = np.polyfit(univ_years, salaries, 1)
+            trend_line = [trend_slope * year + trend_intercept for year in univ_years]
+            trend_line = [round(val, 2) for val in trend_line]
+        else:
+            trend_line = salaries
+            trend_slope = 0
+        
+        university_data[university] = {
+            "years": [int(year) for year in univ_years],  
+            "salaries": [float(salary) for salary in salaries],  
+            "moving_averages": [float(avg) for avg in moving_avg],  
+            "trend_line": [float(val) for val in trend_line],  
+            "trend_slope": float(trend_slope),  
+            "data_points": int(len(salaries)),  
+            "salary_change": float(salaries[-1] - salaries[0]) if len(salaries) >= 2 else 0.0,
+            "salary_change_pct": float((salaries[-1] - salaries[0]) / salaries[0] * 100) if len(salaries) >= 2 and salaries[0] > 0 else 0.0
+        }
+    
+    return {
+        "universities": university_data,
+        "all_universities": available_universities,
+        "years_range": [int(year) for year in years],  
+        "filtered_period": {
+            "start_year": int(min(years)) if years else None,
+            "end_year": int(max(years)) if years else None
+        }
+    }
+
+
 def compute_university_roi(df: pd.DataFrame, year=None, start_year=None, end_year=None):
     filtered = df.copy()
 
@@ -259,10 +350,33 @@ def function3():
 
 @app.route("/function4")
 def function4():
+    df = load_dataset()
+    
+    # Get all available universities for dropdown
+    all_universities = sorted(df["university"].dropna().unique().tolist())
+    
+    # Get all available years for period selection
+    all_years = sorted(pd.to_numeric(df["year"], errors="coerce").dropna().astype(int).unique().tolist())
+    
+    # Default selection: top 5 universities by latest salary
+    latest_year = max(all_years)
+    
+    # Convert gross_monthly_median to numeric for mean calculation
+    df_latest = df[df["year"] == latest_year].copy()
+    df_latest["gross_monthly_median"] = pd.to_numeric(df_latest["gross_monthly_median"], errors="coerce")
+    
+    latest_salaries = df_latest.groupby("university")["gross_monthly_median"].mean().sort_values(ascending=False)
+    default_universities = latest_salaries.head(5).index.tolist()
+    
     return render_template(
         "function4.html",
-        brand_sub="Function 4 Dashboard",
+        brand_sub="Salary Trend Analysis",
         active_page="function4",
+        
+        # Selection options
+        all_universities=all_universities,
+        all_years=all_years,
+        default_universities=default_universities
     )
 
 
@@ -273,6 +387,76 @@ def function5():
         brand_sub="Function 5 Dashboard",
         active_page="function5",
     )
+
+
+@app.route("/api/salary-trends", methods=["POST"])
+def salary_trends_api():
+    """API endpoint for dynamic salary trend analysis"""
+    data = request.get_json()
+    
+    universities = data.get("universities", [])
+    start_year = data.get("start_year")
+    end_year = data.get("end_year")
+    
+    df = load_dataset()
+    trend_data = compute_salary_trend_analysis(
+        df=df,
+        universities=universities if universities else None,
+        start_year=start_year,
+        end_year=end_year
+    )
+    
+    # Prepare chart datasets
+    chart_datasets = []
+    colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#C9CBCF', '#4BC0C0', '#FF6384', '#36A2EB']
+    
+    for i, (university, data) in enumerate(trend_data["universities"].items()):
+        color = colors[i % len(colors)]
+        
+        # Raw salary data
+        chart_datasets.append({
+            "label": f"{university} - Actual",
+            "data": [float(x) for x in data["salaries"]],  # Ensure Python float
+            "borderColor": color,
+            "backgroundColor": color + "20",
+            "fill": False,
+            "borderWidth": 2,
+            "pointRadius": 4,
+            "type": "line"
+        })
+        
+        # Moving average
+        chart_datasets.append({
+            "label": f"{university} - 3yr MA",
+            "data": [float(x) for x in data["moving_averages"]],  # Ensure Python float
+            "borderColor": color,
+            "backgroundColor": color + "10",
+            "borderDash": [5, 5],
+            "fill": False,
+            "borderWidth": 2,
+            "pointRadius": 2,
+            "type": "line"
+        })
+        
+        # Trend line
+        chart_datasets.append({
+            "label": f"{university} - Trend",
+            "data": [float(x) for x in data["trend_line"]],  # Ensure Python float
+            "borderColor": color,
+            "backgroundColor": color + "05",
+            "borderDash": [10, 5],
+            "fill": False,
+            "borderWidth": 1,
+            "pointRadius": 0,
+            "type": "line"
+        })
+    
+    return jsonify({
+        "chart_datasets": chart_datasets,
+        "years_range": trend_data["years_range"],
+        "university_data": trend_data["universities"],
+        "filtered_period": trend_data["filtered_period"]
+    })
 
 
 @app.route("/api/preview")

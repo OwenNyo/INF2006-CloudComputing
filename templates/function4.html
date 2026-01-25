@@ -1,18 +1,421 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Function 4</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ brand_sub }} - Graduate Employment Analytics</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/function4.css') }}">
 </head>
 
 <body>
-  {% include "partials/navbar.html" %}
+    <!-- Include Navbar -->
+    {% include 'partials/navbar.html' %}
+    
+    <div class="container-fluid py-4">
+        <!-- Header Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="hero-section text-center p-4 rounded bg-gradient">
+                    <h1 class="display-4 text-black mb-3">{{ brand_sub }}</h1>
+                    <p class="lead text-white-75 mb-4">
+                        Track salary trends over time with moving averages and linear trend lines
+                    </p>
+                </div>
+            </div>
+        </div>
 
-  <main class="page">
-    <!-- Intentionally blank (content will be added later) -->
-  </main>
-  {% include "partials/footer.html" %}
+        <!-- Controls Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-sliders-h me-2"></i>
+                            Analysis Controls
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="trendForm">
+                            <div class="row">
+                                <!-- University Selection -->
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Select Universities (up to 5):</label>
+                                    <div class="university-checkboxes" style="max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 0.375rem; padding: 0.5rem;">
+                                        {% for university in all_universities %}
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="universities" 
+                                                   value="{{ university }}" id="univ_{{ loop.index }}" 
+                                                   {% if university in default_universities %}checked{% endif %}>
+                                            <label class="form-check-label" for="univ_{{ loop.index }}">
+                                                {{ university }}
+                                            </label>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    <small class="text-muted">Check up to 5 universities for comparison</small>
+                                </div>
+                                
+                                <!-- Time Period Selection -->
+                                <div class="col-md-6 mb-3">
+                                    <div class="row">
+                                        <div class="col-12 mb-3">
+                                            <label class="form-label">Data to Display:</label>
+                                            <div class="data-type-checkboxes">
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="checkbox" name="data_types" 
+                                                           value="actual" id="showActual" checked>
+                                                    <label class="form-check-label" for="showActual">
+                                                        Raw Salary Data
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="checkbox" name="data_types" 
+                                                           value="moving_avg" id="showMovingAvg" checked>
+                                                    <label class="form-check-label" for="showMovingAvg">
+                                                        3-Year Moving Average
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="checkbox" name="data_types" 
+                                                           value="trend" id="showTrend" checked>
+                                                    <label class="form-check-label" for="showTrend">
+                                                        Linear Trend Line
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="startYear" class="form-label">Start Year:</label>
+                                            <select id="startYear" name="start_year" class="form-select">
+                                                {% for year in all_years %}
+                                                <option value="{{ year }}" {% if year == all_years[0] %}selected{% endif %}>
+                                                    {{ year }}
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="endYear" class="form-label">End Year:</label>
+                                            <select id="endYear" name="end_year" class="form-select">
+                                                {% for year in all_years %}
+                                                <option value="{{ year }}" {% if year == all_years[-1] %}selected{% endif %}>
+                                                    {{ year }}
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="fas fa-chart-line me-2"></i>
+                                        Update Analysis
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-success text-black">
+                        <h5 class="mb-0 text-black">
+                            <i class="fas fa-chart-line me-2"></i>
+                            Salary Trend Analysis
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="salaryTrendChart"></canvas>
+                        </div>
+                        <div class="mt-3">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <small class="text-muted">
+                                        <strong>Actual:</strong> <span style="border-bottom: 2px solid #FF6384;">────</span> Raw salary data
+                                    </small>
+                                </div>
+                                <div class="col-md-4">
+                                    <small class="text-muted">
+                                        <strong>3yr MA:</strong> <span style="border-bottom: 2px dashed #FF6384;">- - - -</span> 3-year moving average
+                                    </small>
+                                </div>
+                                <div class="col-md-4">
+                                    <small class="text-muted">
+                                        <strong>Trend:</strong> <span style="border-bottom: 1px dashed #FF6384;">· · · ·</span> Linear trend line
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Table -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-table me-2"></i>
+                            Trend Summary
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>University</th>
+                                        <th>Period</th>
+                                        <th>Total Change</th>
+                                        <th>% Change</th>
+                                        <th>Trend Slope</th>
+                                        <th>Data Points</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="summaryTableBody">
+                                    <!-- Table will be populated by API call -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include Footer -->
+    {% include 'partials/footer.html' %}
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Font Awesome -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        // Wait for DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            let chart;
+            
+            // Load initial data via API call
+            loadInitialData();
+            
+            // Handle form submission
+            document.getElementById('trendForm').addEventListener('submit', handleFormSubmit);
+            
+            async function loadInitialData() {
+                const defaultUniversities = {{ default_universities | tojson }};
+                const allYears = {{ all_years | tojson }};
+                
+                const requestData = {
+                    universities: defaultUniversities,
+                    start_year: allYears[0],
+                    end_year: allYears[allYears.length - 1]
+                };
+                
+                try {
+                    const response = await fetch('/api/salary-trends', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestData)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    // Filter datasets based on selected data types
+                    const selectedDataTypes = getSelectedDataTypes();
+                    const filteredDatasets = filterDatasets(data.chart_datasets, selectedDataTypes);
+                    
+                    // Initialize chart with filtered API data
+                    initializeChart(filteredDatasets, data.years_range);
+                    
+                    // Update table with API data
+                    updateTable(data.university_data);
+                    
+                } catch (error) {
+                    console.error('Error loading initial data:', error);
+                    alert('Error loading initial data. Please refresh the page.');
+                }
+            }
+            
+            async function handleFormSubmit(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(e.target);
+                const selectedUniversities = Array.from(document.querySelectorAll('input[name="universities"]:checked'))
+                    .map(checkbox => checkbox.value);
+                
+                // Limit to 5 universities
+                if (selectedUniversities.length > 5) {
+                    alert('Please select maximum 5 universities for better visualization');
+                    return;
+                }
+                
+                if (selectedUniversities.length === 0) {
+                    alert('Please select at least one university');
+                    return;
+                }
+                
+                const requestData = {
+                    universities: selectedUniversities,
+                    start_year: parseInt(formData.get('start_year')),
+                    end_year: parseInt(formData.get('end_year'))
+                };
+                
+                try {
+                    const response = await fetch('/api/salary-trends', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestData)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    // Filter datasets based on selected data types
+                    const selectedDataTypes = getSelectedDataTypes();
+                    const filteredDatasets = filterDatasets(data.chart_datasets, selectedDataTypes);
+                    
+                    // Update chart
+                    updateChart(filteredDatasets, data.years_range);
+                    
+                    // Update table
+                    updateTable(data.university_data);
+                    
+                } catch (error) {
+                    console.error('Error updating trend analysis:', error);
+                    alert('Error updating analysis. Please try again.');
+                }
+            }
+            
+            function initializeChart(datasets, years) {
+                const ctx = document.getElementById('salaryTrendChart').getContext('2d');
+                chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: years,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    filter: function(legendItem) {
+                                        // Show only actual salary lines in legend for cleaner view
+                                        return legendItem.text.includes('Actual');
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.dataset.label}: $${context.parsed.y.toFixed(0)}`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Year'
+                                }
+                            },
+                            y: {
+                                beginAtZero: false,
+                                title: {
+                                    display: true,
+                                    text: 'Median Salary ($)'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            function updateChart(datasets, years) {
+                chart.data.labels = years;
+                chart.data.datasets = datasets;
+                chart.update();
+            }
+            
+            function getSelectedDataTypes() {
+                return Array.from(document.querySelectorAll('input[name="data_types"]:checked'))
+                    .map(checkbox => checkbox.value);
+            }
+            
+            function filterDatasets(datasets, selectedTypes) {
+                if (selectedTypes.length === 0) {
+                    return []; // No data types selected
+                }
+                
+                return datasets.filter(dataset => {
+                    if (selectedTypes.includes('actual') && dataset.label.includes('Actual')) {
+                        return true;
+                    }
+                    if (selectedTypes.includes('moving_avg') && dataset.label.includes('3yr MA')) {
+                        return true;
+                    }
+                    if (selectedTypes.includes('trend') && dataset.label.includes('Trend')) {
+                        return true;
+                    }
+                    return false;
+                });
+            }
+            
+            function updateTable(universityData) {
+                const tbody = document.getElementById('summaryTableBody');
+                tbody.innerHTML = '';
+                
+                Object.entries(universityData).forEach(([university, data]) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td><strong>${university}</strong></td>
+                        <td>${data.years[0]}-${data.years[data.years.length - 1]}</td>
+                        <td>
+                            <span class="badge ${data.salary_change > 0 ? 'bg-success' : 'bg-danger'}">
+                                $${data.salary_change.toFixed(2)}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge ${data.salary_change_pct > 0 ? 'bg-success' : 'bg-danger'}">
+                                ${data.salary_change_pct.toFixed(2)}%
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge ${data.trend_slope > 0 ? 'bg-info' : 'bg-warning'}">
+                                $${data.trend_slope.toFixed(2)}/year
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">${data.data_points}</span>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+        });
+    </script>
 </body>
 </html>
