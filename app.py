@@ -306,7 +306,7 @@ def function1():
 def function2():
     return render_template(
         "function2.html",
-        brand_sub="Function 2 Dashboard",
+        brand_sub="Salary vs Employment Trade-off",
         active_page="function2",
     )
 
