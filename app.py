@@ -300,6 +300,8 @@ def function1():
     )
 
 
+
+#------------ Function 2 ------------#
 @app.route("/function2")
 def function2():
     return render_template(
@@ -308,6 +310,36 @@ def function2():
         active_page="function2",
     )
 
+
+@app.route("/function2graph")
+def function2graph():
+    group_by = request.args.get("group_by", "degree")
+    df = load_dataset()
+    df["gross_monthly_median"] = pd.to_numeric(df["gross_monthly_median"], errors="coerce")
+    df["employment_rate_ft_perm"] = pd.to_numeric(df["employment_rate_ft_perm"], errors="coerce")
+
+    # Drop rows with missing numeric values
+    df = df.dropna(subset=[group_by, "employment_rate_ft_perm", "gross_monthly_median"])
+
+    grouped = (
+        df.groupby(group_by)
+        .agg(
+            avg_salary=("gross_monthly_median", "mean"),
+            avg_employment=("employment_rate_ft_perm", "mean")
+        )
+        .reset_index()
+    )
+    labels = grouped[group_by].tolist()
+    salaries = grouped["avg_salary"].tolist()
+    employment = grouped["avg_employment"].tolist()
+
+    return jsonify({
+        "labels": labels,
+        "salary": salaries,
+        "employment": employment
+    })
+
+#------------------------------------#
 
 @app.route("/function3")
 def function3():

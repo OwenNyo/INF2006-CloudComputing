@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Function 2</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="/static/js/main.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 </head>
 
 <body>
@@ -12,6 +14,14 @@
 
   <main class="page">
     <!-- Intentionally blank (content will be added later) -->
+    <label for="groupBy">Group data by:</label>
+<select id="groupBy" onchange="updateChart2()">
+    <option value="university">University</option>
+    <option value="degree">Degree</option>
+</select>
+
+    <div id="chart2" style="width:100%; height:600px;"></div>
+
   </main>
   {% include "partials/footer.html" %}
 </body>
