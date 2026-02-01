@@ -4,6 +4,10 @@ import pandas as pd
 import numpy as np
 from dotenv import load_dotenv
 import math
+import logging
+
+log = logging.getLogger(__name__)
+
 
 app = Flask(__name__)
 
@@ -12,27 +16,40 @@ load_dotenv()
 
 
 def load_dataset():
-    source = os.getenv("DATA_SOURCE", "local").lower()
+    # Default to local so missing env vars don't crash the app
+    source = (os.getenv("DATA_SOURCE") or "local").lower()
 
-    if source == "s3_presigned":
-        url = os.getenv("S3_PRESIGNED_URL")
+    local_path = os.getenv("LOCAL_DATA_PATH")  # may be None
+    s3_url = os.getenv("S3_PRESIGNED_URL")     # may be None
 
-        if not url:
+    def load_local():
+        if not local_path:
+            raise RuntimeError("LOCAL_DATA_PATH is not set")
+        if not os.path.exists(local_path):
+            raise FileNotFoundError(f"Local dataset not found at {local_path}")
+        return pd.read_csv(local_path)
+
+    def load_s3():
+        if not s3_url:
             raise RuntimeError("S3_PRESIGNED_URL is not set")
+        # If the URL is expired/unreachable, pandas will throw (URLError/HTTPError/etc.)
+        return pd.read_csv(s3_url)
 
+    # If user asked for S3 first, try it, then fall back to local
+    if source == "s3_presigned":
         try:
-            return pd.read_csv(url)
+            df = load_s3()
+            log.info("Loaded dataset from S3 presigned URL")
+            return df
         except Exception as e:
-            raise RuntimeError(
-                "Failed to load dataset from pre-signed URL. " "It may have expired."
-            ) from e
-    else:
-        path = os.getenv("LOCAL_DATA_PATH")
-        if not os.path.exists(path):
-            raise FileNotFoundError(f"Local dataset not found at {path}")
+            log.warning("S3 presigned load failed, falling back to local: %s", e)
+            return load_local()
 
-        return pd.read_csv(path)
+    # If user asked for local, do local (no S3 attempt)
+    if source == "local":
+        return load_local()
 
+    # If it's some unknown value, be strict
     raise RuntimeError(f"Unknown DATA_SOURCE value: {source}")
 
 
