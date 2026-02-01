@@ -14,14 +14,6 @@ load_dotenv()
 def load_dataset():
     source = os.getenv("DATA_SOURCE", "local").lower()
 
-    if source == "local":
-        path = os.getenv("LOCAL_DATA_PATH", "data/GraduateEmployment.csv")
-
-        if not os.path.exists(path):
-            raise FileNotFoundError(f"Local dataset not found at {path}")
-
-        return pd.read_csv(path)
-
     if source == "s3_presigned":
         url = os.getenv("S3_PRESIGNED_URL")
 
@@ -34,6 +26,12 @@ def load_dataset():
             raise RuntimeError(
                 "Failed to load dataset from pre-signed URL. " "It may have expired."
             ) from e
+    else:
+        path = os.getenv("LOCAL_DATA_PATH")
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Local dataset not found at {path}")
+
+        return pd.read_csv(path)
 
     raise RuntimeError(f"Unknown DATA_SOURCE value: {source}")
 
